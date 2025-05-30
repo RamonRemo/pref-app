@@ -1,33 +1,38 @@
-name: Build and Deploy to GitHub Pages
+name: GitHub Pages
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
-    branches: [ main ]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-
+  deploy:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
     steps:
-    - uses: actions/checkout@v3
-    
-    - uses: subosito/flutter-action@v2
-      with:
-        flutter-version: '3.32.0'
-        channel: 'stable'
-    
-    - name: Install dependencies
-      run: flutter pub get
-    
-    - name: Build web
-      run: flutter build web --release --base-href "/pref-app/"
-    
-    - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v3
-      if: github.ref == 'refs/heads/main'
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./build/web
-        publish_branch: gh-pages
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.0'
+          channel: 'stable'
+
+      - name: Install
+        run: |
+          flutter config --enable-web
+          flutter pub get
+
+      - name: Build
+        run: flutter build web --release --base-href "/pref-app/"
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v4
+        if: github.ref == 'refs/heads/main'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/web
